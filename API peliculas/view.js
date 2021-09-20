@@ -2,8 +2,9 @@
  * Module dependencies
  */
  const React = require('react');
+ const {useEffect, useState} = React
  const PropTypes = require('prop-types');
- const Head = require('nordic/head');
+ const Head = require('react-declarative-head');
  const MeliGA = require('nordic/analytics/meli-ga');
  const MelidataTrack = require('nordic/melidata/melidata-track');
  const Script = require('nordic/script');
@@ -12,12 +13,15 @@
  const injectI18n = require('nordic/i18n/injectI18n');
  const Image = require('nordic/image');
  const DemoComponent = require('../../components/DemoComponent');
+ const restclient = require('nordic/restclient')({
+   baseURL: '/api'
+ })
  
  /**
   * View Component
   */
  function View(props) {
-   const { i18n, translations, products, site, siteId, lowEnd, deviceType, company, imagesPrefix } = props;
+   const { i18n, translations, site, siteId, lowEnd, deviceType, company, imagesPrefix } = props;
    const preloadedState = {
      i18n,
      translations,
@@ -27,16 +31,24 @@
      deviceType,
      company,
      imagesPrefix,
-     products,
    };
-   
+ 
+ const [movies, setMovies] = useState([])
+ 
+ useEffect(()=> {
+ 
+   restclient.get('/peliculas/getMovies')
+   .then(response => setMovies(response.data))
+ 
+ }, [])
+ 
    return (
      <div className="demo">
        <MeliGA
          section="universal"
          page="test"
        />
- {console.log(products)}
+ 
        <MelidataTrack path="/demo" event_data={{ demo: 'data' }} />
  
        <Head>
@@ -56,12 +68,20 @@
        <Script src="demo.js" />
  
        <DemoComponent i18n={i18n} />
+ {console.log(movies)}
+ <ul>
+ {movies.map(movie => <li>
+   <h2>{movie.titulo}</h2>
+   <p>{movie.genero}</p>
+   <Image src={movie.portada} alt={movie.titulo}/>
+   </li>)}
+ </ul>
  
        <h2>
          {i18n.gettext('Site details:')}
        </h2>
        <p>
-         {i18n.gettext('Country: {0}, default currency: {1}, company: {2}, {0}',
+         {i18n.gettext('Country: {0}, default currency: {1}, company: {2}',
            site.name, site.default_currency_id, company)}
        </p>
        <h2>
@@ -138,7 +158,6 @@
    deviceType: PropTypes.string,
    company: PropTypes.string,
    imagesPrefix: PropTypes.string,
- 
  };
  
  View.defaultProps = {
@@ -153,4 +172,3 @@
   * Inject i18n context as props into View.
   */
  module.exports = injectI18n(View);
- 
